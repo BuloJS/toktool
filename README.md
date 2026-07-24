@@ -54,7 +54,30 @@ Seule la section utile de la vidéo est téléchargée (pas la vidéo entière).
 
 Le jeton est rafraîchi automatiquement ensuite.
 
-## 3. Clip + publication TikTok en une commande
+## 3. Suggestions de titre et de hashtags
+
+À partir des métadonnées publiques de la vidéo (titre, description, tags,
+catégorie), toktool propose plusieurs titres et une liste de hashtags —
+sans rien télécharger :
+
+```bash
+toktool suggest "https://youtu.be/dQw4w9WgXcQ"
+```
+
+Exemple de sortie :
+
+```
+Titres proposés :
+  1. Incroyable but de dernière minute en finale !
+  2. Incroyable but de dernière minute en finale ! 🔥
+  3. Le passage à ne pas rater : Incroyable But Dernière 👀
+Hashtags proposés :
+  #sport #football #highlights #but #finale #fyp #pourtoi #viral
+```
+
+## 4. Clip + publication TikTok en une commande
+
+Avec un titre choisi manuellement :
 
 ```bash
 toktool clip "https://youtu.be/dQw4w9WgXcQ" \
@@ -63,11 +86,44 @@ toktool clip "https://youtu.be/dQw4w9WgXcQ" \
   --publish
 ```
 
-> ⚠️ Tant que votre app TikTok n'est pas **auditée** par TikTok, l'API impose
-> la visibilité `SELF_ONLY` : la vidéo arrive sur votre compte en « visible
-> par moi uniquement », à basculer en public depuis l'app TikTok. Après audit
-> de votre app, ajoutez `--privacy PUBLIC_TO_EVERYONE` pour publier directement
+Ou en laissant toktool générer le titre + les hashtags automatiquement :
+
+```bash
+toktool clip "https://youtu.be/dQw4w9WgXcQ" \
+  --start 12:30 --duration 60 --auto-title --publish
+```
+
+> 🔒 **Test en privé.** Par défaut, la publication se fait en `SELF_ONLY` :
+> la vidéo arrive sur votre compte en « visible par moi uniquement ».
+> Parfait pour un premier test — vous la vérifiez dans l'app TikTok, puis
+> vous la passez en public à la main si elle vous convient. C'est aussi la
+> seule visibilité autorisée tant que votre app TikTok n'est pas **auditée**.
+> Après audit, ajoutez `--privacy PUBLIC_TO_EVERYONE` pour publier directement
 > en public.
+
+## 5. Planifier la publication
+
+L'option `--at` fabrique le clip **tout de suite** (pour repérer aussitôt une
+erreur) puis attend l'heure indiquée pour publier :
+
+```bash
+# Aujourd'hui ou demain à 18h00
+toktool clip "https://youtu.be/dQw4w9WgXcQ" \
+  --start 12:30 --auto-title --publish --at "18:00"
+
+# Date et heure précises
+toktool clip "https://youtu.be/dQw4w9WgXcQ" \
+  --start 12:30 --auto-title --publish --at "2026-07-25 18:00"
+```
+
+Le processus reste ouvert jusqu'à la publication. Pour une planification qui
+survit à la fermeture du terminal, passez par `cron` (macOS/Linux) :
+
+```cron
+# Publier tous les jours à 18h00 (crontab -e)
+0 18 * * *  cd /chemin/vers/toktool && TIKTOK_CLIENT_KEY=... TIKTOK_CLIENT_SECRET=... \
+            toktool clip "https://youtu.be/XXXX" --start 12:30 --auto-title --publish
+```
 
 ## Droits d'auteur
 
