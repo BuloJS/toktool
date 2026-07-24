@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Vérification TikTok par balise meta : remplacez la valeur ci-dessous par
+     celle fournie par TikTok si vous choisissez la méthode "meta tag".
+<meta name="tiktok-developers-site-verification" content="VALEUR_TIKTOK">
+-->
+<title>toktool · Politique de confidentialité</title>
+<link rel="stylesheet" href="_style.css">
+</head>
+<body>
+<nav><a href="./">← Accueil</a> · <a href="terms.html">Conditions d'utilisation</a></nav>
+<h1>Politique de confidentialité — toktool</h1>
+<p class="updated">Dernière mise à jour : 24 juillet 2026</p>
+
+<p><strong>toktool</strong> est un outil personnel et open source qui permet à
+son utilisateur de créer un clip vidéo à partir d'une URL YouTube et de le
+publier sur son propre compte TikTok, via l'API officielle TikTok.</p>
+
+<h2>Données traitées</h2>
+<ul>
+  <li><strong>Jetons d'accès TikTok</strong> : obtenus lorsque l'utilisateur
+    connecte son propre compte. Ils sont stockés localement sur la machine de
+    l'utilisateur (fichier <code>~/.toktool/</code>) ou dans les secrets de son
+    dépôt GitHub privé. Ils servent uniquement à publier des vidéos sur le
+    compte de l'utilisateur.</li>
+  <li><strong>Vidéos</strong> : téléchargées temporairement, découpées, puis
+    envoyées au compte TikTok de l'utilisateur. Elles ne sont pas conservées
+    au-delà du traitement.</li>
+</ul>
+
+<h2>Ce que nous ne faisons pas</h2>
+<ul>
+  <li>Aucune donnée n'est collectée, revendue ou partagée avec un tiers.</li>
+  <li>Aucun serveur central : l'outil s'exécute sur la machine ou le compte
+    GitHub de l'utilisateur.</li>
+  <li>La page de connexion ne stocke ni ne transmet aucune information ; le
+    code d'autorisation reste dans le navigateur de l'utilisateur.</li>
+</ul>
+
+<h2>Suppression des données</h2>
+<p>L'utilisateur peut à tout moment révoquer l'accès depuis les réglages de son
+compte TikTok et supprimer le fichier <code>~/.toktool/</code> ou les secrets
+GitHub correspondants.</p>
+
+<h2>Contact</h2>
+<p>Code source et contact :
+<a href="https://github.com/BuloJS/toktool">github.com/BuloJS/toktool</a>.</p>
+</body>
+</html>
