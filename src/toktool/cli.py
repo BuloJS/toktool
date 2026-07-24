@@ -44,7 +44,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("auth", help="Connecter votre compte TikTok (OAuth).")
+    auth = sub.add_parser("auth", help="Connecter votre compte TikTok (OAuth).")
+    auth.add_argument(
+        "--manual", action="store_true",
+        help="Flow sans serveur local : vous collez l'URL de redirection "
+        "(utile depuis un téléphone ou un Codespace).",
+    )
+
+    sub.add_parser(
+        "export",
+        help="Afficher le secret TIKTOK_CREDENTIALS à copier dans GitHub.",
+    )
 
     sugg = sub.add_parser(
         "suggest", help="Proposer titres et hashtags pour une vidéo YouTube."
@@ -101,9 +111,27 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def cmd_auth() -> int:
-    tiktok.authorize()
+def cmd_auth(args: argparse.Namespace) -> int:
+    tiktok.authorize(manual=args.manual)
     print("Compte TikTok connecté, jetons enregistrés dans ~/.toktool/.")
+    print("Pour l'utiliser dans GitHub Actions : `toktool export`.")
+    return 0
+
+
+def cmd_export() -> int:
+    import json
+
+    from . import config
+
+    creds = config.load_credentials()
+    if not creds:
+        print("Aucun compte connecté : lancez d'abord `toktool auth`.",
+              file=sys.stderr)
+        return 1
+    print("Copiez la ligne ci-dessous dans un secret GitHub nommé "
+          "TIKTOK_CREDENTIALS")
+    print("(repo → Settings → Secrets and variables → Actions → New secret) :\n")
+    print(json.dumps(creds))
     return 0
 
 
@@ -209,7 +237,9 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "auth":
-            return cmd_auth()
+            return cmd_auth(args)
+        if args.command == "export":
+            return cmd_export()
         if args.command == "suggest":
             return cmd_suggest(args)
         return cmd_clip(args)

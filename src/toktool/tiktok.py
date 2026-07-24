@@ -60,12 +60,7 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def authorize() -> dict:
-    """Flow OAuth complet (PKCE) ; renvoie et sauvegarde les jetons."""
-    verifier = secrets.token_urlsafe(48)
-    challenge = hashlib.sha256(verifier.encode()).hexdigest()
-    state = secrets.token_urlsafe(16)
-
+def _build_auth_url(state: str, challenge: str) -> str:
     params = {
         "client_key": config.client_key(),
         "response_type": "code",
@@ -75,7 +70,53 @@ def authorize() -> dict:
         "code_challenge": challenge,
         "code_challenge_method": "S256",
     }
-    url = AUTH_URL + "?" + urllib.parse.urlencode(params)
+    return AUTH_URL + "?" + urllib.parse.urlencode(params)
+
+
+def _extract_code(pasted: str, state: str) -> str:
+    """Récupère le `code` depuis une URL de redirection collée (ou le code seul)."""
+    pasted = pasted.strip()
+    if "code=" in pasted or "?" in pasted:
+        query = urllib.parse.urlparse(pasted).query or pasted
+        params = urllib.parse.parse_qs(query)
+        got_state = (params.get("state") or [None])[0]
+        if got_state and got_state != state:
+            raise TikTokError("Paramètre state invalide, tentative rejetée.")
+        codes = params.get("code")
+        if not codes:
+            raise TikTokError(f"Aucun code trouvé dans : {pasted!r}")
+        return codes[0]
+    return pasted  # l'utilisateur a collé le code brut
+
+
+def authorize(manual: bool = False) -> dict:
+    """Flow OAuth complet (PKCE) ; renvoie et sauvegarde les jetons.
+
+    `manual=True` : n'ouvre pas de serveur local — affiche l'URL, puis attend
+    que l'utilisateur colle l'URL de redirection (ou le code). Utile depuis un
+    téléphone / un environnement sans navigateur local (ex : Codespaces).
+    """
+    verifier = secrets.token_urlsafe(48)
+    challenge = hashlib.sha256(verifier.encode()).hexdigest()
+    state = secrets.token_urlsafe(16)
+    url = _build_auth_url(state, challenge)
+
+    if manual:
+        print("1. Ouvrez cette URL dans votre navigateur (téléphone ok) :\n")
+        print(f"   {url}\n")
+        print("2. Autorisez l'accès. La page 'localhost' ne se chargera pas :")
+        print("   copiez l'URL complète depuis la barre d'adresse (elle contient")
+        print("   ...?code=...&state=...) et collez-la ci-dessous.\n")
+        pasted = input("URL de redirection (ou code) : ").strip()
+        code = _extract_code(pasted, state)
+        return _exchange_token(
+            {
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": REDIRECT_URI,
+                "code_verifier": verifier,
+            }
+        )
 
     server = http.server.HTTPServer(("localhost", REDIRECT_PORT), _CallbackHandler)
     thread = threading.Thread(target=server.handle_request, daemon=True)

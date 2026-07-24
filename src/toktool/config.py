@@ -35,6 +35,21 @@ def client_secret() -> str:
 
 
 def load_credentials() -> dict:
+    # Priorité aux variables d'environnement (utilisées par GitHub Actions,
+    # où il n'y a pas de fichier local) :
+    #  - TIKTOK_CREDENTIALS : le JSON complet renvoyé par l'OAuth
+    #  - TIKTOK_REFRESH_TOKEN : juste le refresh token ; l'access token sera
+    #    (re)généré au premier appel puisqu'on force expires_at=0.
+    raw = os.environ.get("TIKTOK_CREDENTIALS")
+    if raw:
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+    refresh = os.environ.get("TIKTOK_REFRESH_TOKEN")
+    if refresh:
+        return {"refresh_token": refresh, "access_token": "", "expires_at": 0}
+
     if not CREDENTIALS_FILE.exists():
         return {}
     try:

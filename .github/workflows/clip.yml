@@ -1,0 +1,103 @@
+name: 🎬 Clip → TikTok
+
+# « App » déclenchable depuis l'appli mobile GitHub :
+#   Actions → 🎬 Clip → TikTok → Run workflow → remplir le formulaire → Run.
+# Nécessite les secrets du repo : TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET,
+# TIKTOK_CREDENTIALS (voir README, obtenus via `toktool auth` puis `export`).
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL de la vidéo YouTube"
+        required: true
+        type: string
+      start:
+        description: "Début du clip (ex : 1:30 ou 90)"
+        required: true
+        type: string
+      duration:
+        description: "Durée en secondes (max 60)"
+        required: true
+        default: "45"
+        type: string
+      title:
+        description: "Titre/légende (vide = généré automatiquement)"
+        required: false
+        type: string
+      privacy:
+        description: "Visibilité TikTok"
+        required: true
+        default: "SELF_ONLY (privé / test)"
+        type: choice
+        options:
+          - "SELF_ONLY (privé / test)"
+          - "PUBLIC_TO_EVERYONE (public)"
+      publish:
+        description: "Publier sur TikTok ? (sinon : clip récupérable en artefact)"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: toktool-clip
+  cancel-in-progress: false
+
+jobs:
+  clip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer toktool
+        run: pip install .
+
+      - name: Créer le clip et publier
+        env:
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_CREDENTIALS: ${{ secrets.TIKTOK_CREDENTIALS }}
+        run: |
+          set -euo pipefail
+          PRIVACY="SELF_ONLY"
+          case "${{ inputs.privacy }}" in
+            PUBLIC*) PRIVACY="PUBLIC_TO_EVERYONE" ;;
+          esac
+
+          ARGS=(clip "${{ inputs.url }}"
+                --start "${{ inputs.start }}"
+                --duration "${{ inputs.duration }}"
+                --privacy "$PRIVACY"
+                -o clip.mp4)
+
+          if [ -z "${{ inputs.title }}" ]; then
+            ARGS+=(--auto-title)
+          else
+            ARGS+=(--title "${{ inputs.title }}")
+          fi
+
+          if [ "${{ inputs.publish }}" = "true" ]; then
+            ARGS+=(--publish)
+          fi
+
+          toktool "${ARGS[@]}"
+
+      - name: Mettre le clip à disposition (téléchargeable depuis le tél.)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clip
+          path: clip.mp4
+          if-no-files-found: ignore
+          retention-days: 7

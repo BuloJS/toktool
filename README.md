@@ -1,12 +1,18 @@
 # toktool
 
-Agent en ligne de commande : vous donnez une **URL YouTube** et un **timecode**,
-il crée un **clip de 60 s maximum** (format vertical 9:16 prêt pour TikTok)
-et peut le **publier automatiquement sur TikTok** via l'API officielle.
+Vous donnez une **URL YouTube** et un **timecode**, toktool crée un **clip de
+60 s maximum** (format vertical 9:16 prêt pour TikTok) et peut le **publier
+automatiquement sur TikTok** via l'API officielle.
 
 ```
 URL YouTube + timecode ──> yt-dlp ──> ffmpeg (découpe + 9:16) ──> TikTok
 ```
+
+Deux façons de l'utiliser :
+
+- **📱 Depuis le téléphone, sans PC** — via un bouton dans GitHub Actions
+  (voir [« Utilisation depuis le téléphone »](#-utilisation-depuis-le-téléphone-sans-pc)).
+- **💻 En ligne de commande** — sur votre ordinateur (sections 1 à 5).
 
 ## Prérequis
 
@@ -124,6 +130,57 @@ survit à la fermeture du terminal, passez par `cron` (macOS/Linux) :
 0 18 * * *  cd /chemin/vers/toktool && TIKTOK_CLIENT_KEY=... TIKTOK_CLIENT_SECRET=... \
             toktool clip "https://youtu.be/XXXX" --start 12:30 --auto-title --publish
 ```
+
+## 📱 Utilisation depuis le téléphone, sans PC
+
+Vous pouvez déclencher toktool comme une petite « app », directement depuis
+**l'application mobile GitHub** — sans ligne de commande. GitHub Actions fait
+tourner le téléchargement, la découpe et l'upload à votre place.
+
+### Réglage initial (une seule fois, nécessite un ordinateur ou un Codespace)
+
+Cette étape demande un navigateur une seule fois. Un **GitHub Codespace**
+(bouton « Code → Codespaces » sur le repo) fonctionne aussi et s'ouvre depuis
+le navigateur du téléphone.
+
+1. **App TikTok.** Sur [developers.tiktok.com](https://developers.tiktok.com),
+   créez une app, activez **Content Posting API** (scope `video.publish`), et
+   déclarez l'URI de redirection `http://localhost:8763/callback`. Notez le
+   *client key* et le *client secret*.
+
+2. **Se connecter à TikTok** (dans le Codespace ou sur un PC) :
+
+   ```bash
+   pip install .
+   export TIKTOK_CLIENT_KEY="..."  TIKTOK_CLIENT_SECRET="..."
+   toktool auth --manual      # ouvre l'URL, vous collez l'URL de redirection
+   toktool export             # affiche le JSON à copier
+   ```
+
+3. **Enregistrer 3 secrets** dans le repo GitHub
+   (Settings → Secrets and variables → Actions → *New repository secret*) :
+
+   | Nom du secret          | Valeur                                    |
+   |------------------------|-------------------------------------------|
+   | `TIKTOK_CLIENT_KEY`    | le client key TikTok                      |
+   | `TIKTOK_CLIENT_SECRET` | le client secret TikTok                   |
+   | `TIKTOK_CREDENTIALS`   | la ligne JSON affichée par `toktool export` |
+
+C'est privé par nature : seuls vous (et les personnes à qui vous donnez accès
+au repo) pouvez déclencher le workflow ou lire les secrets.
+
+### Au quotidien (100 % téléphone)
+
+1. Ouvrez le repo dans l'appli **GitHub** → onglet **Actions**.
+2. Choisissez **🎬 Clip → TikTok** → **Run workflow**.
+3. Remplissez le formulaire : URL YouTube, début, durée, titre (laissez vide
+   pour un titre + hashtags générés automatiquement), visibilité, publier ou non.
+4. **Run** — au bout de 1–2 min, la vidéo est sur votre TikTok (en privé par
+   défaut). Le clip est aussi téléchargeable dans « Artifacts » pour le
+   prévisualiser depuis le téléphone.
+
+> Le jeton TikTok reste valable environ un an ; il suffit de refaire l'étape 2
+> du réglage initial une fois par an.
 
 ## Droits d'auteur
 
