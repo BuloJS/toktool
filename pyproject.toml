@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toktool"
+version = "0.1.0"
+description = "Agent CLI : clip YouTube (max 60 s) -> upload TikTok"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "yt-dlp>=2024.4.9",
+    "requests>=2.31",
+]
+
+[project.scripts]
+toktool = "toktool.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

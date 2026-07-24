@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>toktool · connexion TikTok</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f0f14; color: #f2f2f7;
+  }
+  .card {
+    width: 100%; max-width: 440px; background: #1c1c24; border-radius: 18px;
+    padding: 28px 24px; box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  }
+  h1 { font-size: 1.25rem; margin: 0 0 4px; }
+  p { color: #a9a9b8; font-size: .95rem; line-height: 1.5; margin: 8px 0; }
+  .code-box {
+    margin: 18px 0 8px; padding: 14px; border-radius: 12px;
+    background: #0f0f14; border: 1px solid #2f2f3a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .9rem; word-break: break-all; user-select: all;
+  }
+  button {
+    width: 100%; margin-top: 14px; padding: 14px; border: 0; border-radius: 12px;
+    background: #fe2c55; color: #fff; font-size: 1rem; font-weight: 600;
+    cursor: pointer;
+  }
+  button:active { opacity: .85; }
+  .hint { font-size: .82rem; color: #77778a; margin-top: 16px; }
+  .ok { color: #35c759; font-weight: 600; }
+  .err { color: #ff453a; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎬 toktool · connexion TikTok</h1>
+    <div id="content">
+      <p>Chargement…</p>
+    </div>
+    <p class="hint">Cette page ne stocke rien et n'envoie rien : le code reste
+      dans votre navigateur. Collez-le dans <code>toktool auth</code>.</p>
+  </div>
+
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get("code");
+  var error = params.get("error") || params.get("error_description");
+  var content = document.getElementById("content");
+
+  if (code) {
+    content.innerHTML =
+      '<p>✅ Autorisation reçue. Copiez ce code et collez-le dans le terminal ' +
+      'quand <code>toktool auth</code> le demande :</p>' +
+      '<div class="code-box" id="code">' + code + '</div>' +
+      '<button id="copy">Copier le code</button>';
+    document.getElementById("copy").addEventListener("click", function () {
+      navigator.clipboard.writeText(code).then(function () {
+        var b = document.getElementById("copy");
+        b.textContent = "Copié ✔"; b.classList.add("ok");
+      });
+    });
+  } else if (error) {
+    content.innerHTML =
+      '<p class="err">❌ Autorisation refusée : ' + error + '</p>' +
+      '<p>Relancez <code>toktool auth</code> et réessayez.</p>';
+  } else {
+    content.innerHTML =
+      '<p>Cette page est la page de retour de connexion TikTok pour ' +
+      '<strong>toktool</strong>.</p>' +
+      '<p>Elle affichera votre code d\'autorisation une fois que vous serez ' +
+      'arrivé ici depuis l\'écran d\'autorisation TikTok.</p>';
+  }
+})();
+</script>
+</body>
+</html>
