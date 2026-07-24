@@ -15,6 +15,16 @@ from pathlib import Path
 CONFIG_DIR = Path(os.environ.get("TOKTOOL_HOME", Path.home() / ".toktool"))
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"
 
+# URL de redirection OAuth. Doit être identique à celle déclarée dans l'app
+# TikTok. Par défaut la page HTTPS hébergée sur GitHub Pages (aucun DNS à
+# gérer, fonctionne depuis un téléphone) ; surchargée par TIKTOK_REDIRECT_URI
+# (ex : http://localhost:8763/callback pour un flow local sur PC).
+DEFAULT_REDIRECT_URI = "https://bulojs.github.io/toktool/"
+
+
+def redirect_uri() -> str:
+    return os.environ.get("TIKTOK_REDIRECT_URI", DEFAULT_REDIRECT_URI)
+
 
 def client_key() -> str:
     key = os.environ.get("TIKTOK_CLIENT_KEY", "")

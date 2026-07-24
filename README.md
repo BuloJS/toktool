@@ -143,9 +143,14 @@ Cette étape demande un navigateur une seule fois. Un **GitHub Codespace**
 (bouton « Code → Codespaces » sur le repo) fonctionne aussi et s'ouvre depuis
 le navigateur du téléphone.
 
+0. **Activer GitHub Pages** (une fois) : repo → Settings → Pages → *Source :
+   Deploy from a branch* → branche `main`, dossier `/docs` → Save. La page de
+   connexion sera servie à `https://bulojs.github.io/toktool/`.
+
 1. **App TikTok.** Sur [developers.tiktok.com](https://developers.tiktok.com),
    créez une app, activez **Content Posting API** (scope `video.publish`), et
-   déclarez l'URI de redirection `http://localhost:8763/callback`. Notez le
+   déclarez comme **Redirect URI** : `https://bulojs.github.io/toktool/`
+   (URL HTTPS, aucun DNS à gérer — pas besoin de `localhost`). Notez le
    *client key* et le *client secret*.
 
 2. **Se connecter à TikTok** (dans le Codespace ou sur un PC) :
@@ -153,9 +158,15 @@ le navigateur du téléphone.
    ```bash
    pip install .
    export TIKTOK_CLIENT_KEY="..."  TIKTOK_CLIENT_SECRET="..."
-   toktool auth --manual      # ouvre l'URL, vous collez l'URL de redirection
+   toktool auth               # affiche l'URL ; autorisez, la page vous donne
+                              # un code à coller ici
    toktool export             # affiche le JSON à copier
    ```
+
+   > Pour un flow 100 % local sur PC, vous pouvez à la place déclarer
+   > `http://localhost:8763/callback` comme Redirect URI et lancer
+   > `TIKTOK_REDIRECT_URI=http://localhost:8763/callback toktool auth` :
+   > le navigateur s'ouvre et la connexion se fait sans copier-coller.
 
 3. **Enregistrer 3 secrets** dans le repo GitHub
    (Settings → Secrets and variables → Actions → *New repository secret*) :

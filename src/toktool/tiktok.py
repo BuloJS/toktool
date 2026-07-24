@@ -26,7 +26,6 @@ INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
 STATUS_URL = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
 
 REDIRECT_PORT = 8763
-REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/callback"
 SCOPES = "user.info.basic,video.publish"
 
 # Un fichier <= 64 Mo peut être envoyé en un seul chunk.
@@ -65,7 +64,7 @@ def _build_auth_url(state: str, challenge: str) -> str:
         "client_key": config.client_key(),
         "response_type": "code",
         "scope": SCOPES,
-        "redirect_uri": REDIRECT_URI,
+        "redirect_uri": config.redirect_uri(),
         "state": state,
         "code_challenge": challenge,
         "code_challenge_method": "S256",
@@ -89,31 +88,35 @@ def _extract_code(pasted: str, state: str) -> str:
     return pasted  # l'utilisateur a collé le code brut
 
 
-def authorize(manual: bool = False) -> dict:
+def authorize(manual: bool | None = None) -> dict:
     """Flow OAuth complet (PKCE) ; renvoie et sauvegarde les jetons.
 
-    `manual=True` : n'ouvre pas de serveur local — affiche l'URL, puis attend
-    que l'utilisateur colle l'URL de redirection (ou le code). Utile depuis un
-    téléphone / un environnement sans navigateur local (ex : Codespaces).
+    `manual=None` (défaut) : mode choisi automatiquement — serveur local si
+    l'URL de redirection pointe vers localhost, sinon mode manuel (on colle
+    l'URL de retour), adapté à une page HTTPS et à un usage depuis le téléphone.
+    `manual=True`/`False` force le mode.
     """
     verifier = secrets.token_urlsafe(48)
     challenge = hashlib.sha256(verifier.encode()).hexdigest()
     state = secrets.token_urlsafe(16)
     url = _build_auth_url(state, challenge)
+    redirect = config.redirect_uri()
+    if manual is None:
+        manual = "localhost" not in redirect and "127.0.0.1" not in redirect
 
     if manual:
         print("1. Ouvrez cette URL dans votre navigateur (téléphone ok) :\n")
         print(f"   {url}\n")
-        print("2. Autorisez l'accès. La page 'localhost' ne se chargera pas :")
-        print("   copiez l'URL complète depuis la barre d'adresse (elle contient")
-        print("   ...?code=...&state=...) et collez-la ci-dessous.\n")
+        print("2. Autorisez l'accès. Vous êtes redirigé vers la page de retour ;")
+        print("   elle affiche un code (ou l'URL contient ...?code=...&state=...).")
+        print("   Copiez-le et collez-le ci-dessous.\n")
         pasted = input("URL de redirection (ou code) : ").strip()
         code = _extract_code(pasted, state)
         return _exchange_token(
             {
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": REDIRECT_URI,
+                "redirect_uri": redirect,
                 "code_verifier": verifier,
             }
         )
@@ -140,7 +143,7 @@ def authorize(manual: bool = False) -> dict:
         {
             "grant_type": "authorization_code",
             "code": received["code"],
-            "redirect_uri": REDIRECT_URI,
+            "redirect_uri": redirect,
             "code_verifier": verifier,
         }
     )

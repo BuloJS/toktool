@@ -47,8 +47,8 @@ def build_parser() -> argparse.ArgumentParser:
     auth = sub.add_parser("auth", help="Connecter votre compte TikTok (OAuth).")
     auth.add_argument(
         "--manual", action="store_true",
-        help="Flow sans serveur local : vous collez l'URL de redirection "
-        "(utile depuis un téléphone ou un Codespace).",
+        help="Forcer le flow sans serveur local (vous collez l'URL de "
+        "redirection). Sinon le mode est choisi selon TIKTOK_REDIRECT_URI.",
     )
 
     sub.add_parser(
@@ -112,7 +112,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def cmd_auth(args: argparse.Namespace) -> int:
-    tiktok.authorize(manual=args.manual)
+    tiktok.authorize(manual=True if args.manual else None)
     print("Compte TikTok connecté, jetons enregistrés dans ~/.toktool/.")
     print("Pour l'utiliser dans GitHub Actions : `toktool export`.")
     return 0
