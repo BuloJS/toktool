@@ -60,7 +60,9 @@ class Suggestions:
 
 def fetch_metadata(url: str) -> dict:
     """Récupère les métadonnées JSON de la vidéo sans la télécharger."""
-    cmd = ["yt-dlp", "--no-playlist", "--skip-download", "--dump-json", url]
+    from .downloader import YTDLP_CMD
+
+    cmd = [*YTDLP_CMD, "--no-playlist", "--skip-download", "--dump-json", url]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(

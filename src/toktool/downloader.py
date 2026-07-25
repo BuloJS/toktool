@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 # Marge téléchargée autour du clip pour garantir une coupe précise ensuite.
 PADDING_SECONDS = 5
+
+# On appelle yt-dlp via le module Python (`python -m yt_dlp`) plutôt que via un
+# exécutable sur le PATH : yt-dlp est une dépendance de toktool, donc le même
+# interpréteur peut toujours l'exécuter, quel que soit le PATH.
+YTDLP_CMD = [sys.executable, "-m", "yt_dlp"]
 
 
 class DownloadError(RuntimeError):
@@ -15,7 +22,11 @@ class DownloadError(RuntimeError):
 
 
 def check_dependencies() -> None:
-    missing = [tool for tool in ("yt-dlp", "ffmpeg") if shutil.which(tool) is None]
+    missing = []
+    if importlib.util.find_spec("yt_dlp") is None:
+        missing.append("yt-dlp")
+    if shutil.which("ffmpeg") is None:
+        missing.append("ffmpeg")
     if missing:
         raise SystemExit(
             "Outils manquants : " + ", ".join(missing)
@@ -37,7 +48,7 @@ def download_section(
     section_end = end + PADDING_SECONDS
 
     cmd = [
-        "yt-dlp",
+        *YTDLP_CMD,
         "--no-playlist",
         "--force-keyframes-at-cuts",
         "--download-sections", f"*{section_start:.2f}-{section_end:.2f}",
