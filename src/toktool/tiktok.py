@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import http.server
+import os
 import secrets
 import threading
 import time
@@ -22,11 +23,28 @@ from . import config
 
 AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
-INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
+# Deux façons de publier selon les droits de l'app TikTok :
+#  - "inbox"  : envoie la vidéo dans les brouillons TikTok de l'utilisateur, qui
+#               termine la publication dans l'app. Scope `video.upload`,
+#               disponible SANS audit — c'est le mode par défaut.
+#  - "direct" : publie directement. Scope `video.publish`, débloqué seulement
+#               APRÈS l'audit de l'app par TikTok.
+INBOX_INIT_URL = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
+DIRECT_INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
 STATUS_URL = "https://open.tiktokapis.com/v2/post/publish/status/fetch/"
 
 REDIRECT_PORT = 8763
-SCOPES = "user.info.basic,video.publish"
+
+
+def upload_mode() -> str:
+    mode = os.environ.get("TIKTOK_UPLOAD_MODE", "inbox").strip().lower()
+    return mode if mode in ("inbox", "direct") else "inbox"
+
+
+def scopes() -> str:
+    if upload_mode() == "direct":
+        return "user.info.basic,video.publish"
+    return "user.info.basic,video.upload"
 
 # Un fichier <= 64 Mo peut être envoyé en un seul chunk.
 SINGLE_CHUNK_MAX = 64 * 1024 * 1024
@@ -63,7 +81,7 @@ def _build_auth_url(state: str, challenge: str) -> str:
     params = {
         "client_key": config.client_key(),
         "response_type": "code",
-        "scope": SCOPES,
+        "scope": scopes(),
         "redirect_uri": config.redirect_uri(),
         "state": state,
         "code_challenge": challenge,
@@ -193,7 +211,12 @@ def upload_video(
     title: str,
     privacy_level: str = "SELF_ONLY",
 ) -> str:
-    """Publie la vidéo en Direct Post ; renvoie le publish_id TikTok."""
+    """Envoie la vidéo à TikTok ; renvoie le publish_id.
+
+    En mode "inbox" (défaut) la vidéo arrive dans les brouillons TikTok de
+    l'utilisateur (à publier depuis l'app). En mode "direct" elle est publiée
+    directement (nécessite une app auditée + le scope video.publish).
+    """
     token = get_access_token()
     size = video.stat().st_size
     if size > SINGLE_CHUNK_MAX:
@@ -202,23 +225,31 @@ def upload_video(
             "qualité ou la durée du clip."
         )
 
-    init_body = {
-        "post_info": {
-            "title": title[:2200],
-            "privacy_level": privacy_level,
-            "disable_duet": False,
-            "disable_comment": False,
-            "disable_stitch": False,
-        },
-        "source_info": {
-            "source": "FILE_UPLOAD",
-            "video_size": size,
-            "chunk_size": size,
-            "total_chunk_count": 1,
-        },
+    source_info = {
+        "source": "FILE_UPLOAD",
+        "video_size": size,
+        "chunk_size": size,
+        "total_chunk_count": 1,
     }
+    if upload_mode() == "direct":
+        url = DIRECT_INIT_URL
+        init_body = {
+            "post_info": {
+                "title": title[:2200],
+                "privacy_level": privacy_level,
+                "disable_duet": False,
+                "disable_comment": False,
+                "disable_stitch": False,
+            },
+            "source_info": source_info,
+        }
+    else:
+        # Mode inbox : pas de post_info, l'utilisateur finalise dans l'app.
+        url = INBOX_INIT_URL
+        init_body = {"source_info": source_info}
+
     resp = requests.post(
-        INIT_URL,
+        url,
         json=init_body,
         headers={"Authorization": f"Bearer {token}"},
         timeout=30,
@@ -226,7 +257,7 @@ def upload_video(
     payload = resp.json()
     data = payload.get("data") or {}
     if resp.status_code != 200 or "upload_url" not in data:
-        raise TikTokError(f"Échec d'initialisation de la publication : {payload}")
+        raise TikTokError(f"Échec d'initialisation de l'envoi : {payload}")
 
     upload_resp = requests.put(
         data["upload_url"],
@@ -245,8 +276,12 @@ def upload_video(
     return data["publish_id"]
 
 
-def wait_for_publish(publish_id: str, timeout: int = 300) -> str:
-    """Interroge le statut jusqu'à publication effective ou échec."""
+def wait_for_publish(publish_id: str, timeout: int = 120) -> str:
+    """Interroge le statut jusqu'à un état terminal ou échec.
+
+    En mode inbox, l'état de succès est l'arrivée dans les brouillons
+    (SEND_TO_USER_INBOX) ; en mode direct, c'est PUBLISH_COMPLETE.
+    """
     token = get_access_token()
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -258,9 +293,9 @@ def wait_for_publish(publish_id: str, timeout: int = 300) -> str:
         )
         data = (resp.json() or {}).get("data") or {}
         status = data.get("status", "UNKNOWN")
-        if status == "PUBLISH_COMPLETE":
+        if status in ("PUBLISH_COMPLETE", "SEND_TO_USER_INBOX"):
             return status
         if status in ("FAILED", "PUBLISH_FAILED"):
-            raise TikTokError(f"Publication refusée par TikTok : {data}")
+            raise TikTokError(f"Envoi refusé par TikTok : {data}")
         time.sleep(5)
     return "PROCESSING"
