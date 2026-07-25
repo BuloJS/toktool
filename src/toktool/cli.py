@@ -215,9 +215,21 @@ def cmd_clip(args: argparse.Namespace) -> int:
         print(f"Publication programmée pour le {when:%Y-%m-%d à %H:%M}.")
         scheduler.wait_until(when)
 
+    if tiktok.upload_mode() == "inbox":
+        print("3/3 Envoi de la vidéo dans tes brouillons TikTok…")
+        publish_id = tiktok.upload_video(output, title, args.privacy)
+        tiktok.wait_for_publish(publish_id)
+        print("Clip envoyé dans TikTok ✔")
+        print("→ Ouvre l'app TikTok : tu as une notification / un brouillon "
+              "prêt. Ajoute la légende et appuie sur « Publier ».")
+        if title:
+            print("\nLégende suggérée à coller dans TikTok :")
+            print(title)
+        return 0
+
     label = "privé (SELF_ONLY, visible par vous seul)" \
         if args.privacy == "SELF_ONLY" else args.privacy
-    print(f"3/3 Publication sur TikTok — visibilité : {label}…")
+    print(f"3/3 Publication directe sur TikTok — visibilité : {label}…")
     publish_id = tiktok.upload_video(output, title, args.privacy)
     status = tiktok.wait_for_publish(publish_id)
     if status == "PUBLISH_COMPLETE":
