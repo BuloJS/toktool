@@ -90,7 +90,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     clip.add_argument(
         "--no-vertical", action="store_true",
-        help="Conserver le format d'origine au lieu du 9:16 avec fond flouté.",
+        help="Conserver le format d'origine au lieu du 9:16.",
+    )
+    clip.add_argument(
+        "--fit", action="store_true",
+        help="Garder la vidéo entière (fond flou) au lieu du plein écran. "
+        "Par défaut le clip remplit tout l'écran 9:16 (rendu TikTok natif).",
     )
     clip.add_argument(
         "--cookies", metavar="FICHIER",
@@ -215,6 +220,7 @@ def cmd_clip(args: argparse.Namespace) -> int:
             duration=duration,
             output=output,
             vertical=not args.no_vertical,
+            fill=not args.fit,
         )
     print(f"Clip prêt : {output} ({duration:.0f} s)")
 
