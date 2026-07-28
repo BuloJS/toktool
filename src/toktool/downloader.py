@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,20 @@ PADDING_SECONDS = 5
 # exécutable sur le PATH : yt-dlp est une dépendance de toktool, donc le même
 # interpréteur peut toujours l'exécuter, quel que soit le PATH.
 YTDLP_CMD = [sys.executable, "-m", "yt_dlp"]
+
+
+def ytdlp_base() -> list[str]:
+    """Commande yt-dlp de base, avec les cookies si YTDLP_COOKIES est défini.
+
+    YouTube bloque souvent les adresses de serveurs cloud (« Sign in to confirm
+    you're not a bot »). Fournir un fichier de cookies exporté d'un navigateur
+    connecté contourne ce blocage.
+    """
+    cmd = list(YTDLP_CMD)
+    cookies = os.environ.get("YTDLP_COOKIES", "").strip()
+    if cookies:
+        cmd += ["--cookies", cookies]
+    return cmd
 
 
 class DownloadError(RuntimeError):
@@ -48,7 +63,7 @@ def download_section(
     section_end = end + PADDING_SECONDS
 
     cmd = [
-        *YTDLP_CMD,
+        *ytdlp_base(),
         "--no-playlist",
         "--force-keyframes-at-cuts",
         "--download-sections", f"*{section_start:.2f}-{section_end:.2f}",

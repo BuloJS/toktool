@@ -93,6 +93,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Conserver le format d'origine au lieu du 9:16 avec fond flouté.",
     )
     clip.add_argument(
+        "--cookies", metavar="FICHIER",
+        help="Fichier de cookies YouTube (cookies.txt) pour contourner le "
+        "blocage anti-bot de YouTube sur les serveurs cloud. Équivaut à la "
+        "variable d'environnement YTDLP_COOKIES.",
+    )
+    clip.add_argument(
         "--publish", action="store_true",
         help="Publier sur TikTok après la découpe (sinon : fichier local seul).",
     )
@@ -155,6 +161,11 @@ def cmd_suggest(args: argparse.Namespace) -> int:
 
 
 def cmd_clip(args: argparse.Namespace) -> int:
+    if args.cookies:
+        import os
+
+        os.environ["YTDLP_COOKIES"] = args.cookies
+
     if args.duration is not None:
         duration = args.duration
     elif args.end is not None:

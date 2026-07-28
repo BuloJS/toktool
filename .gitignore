@@ -5,3 +5,6 @@ build/
 dist/
 .venv/
 clip_*.mp4
+# Ne JAMAIS committer les cookies (contiennent ta session YouTube) :
+cookies.txt
+*cookies*.txt
