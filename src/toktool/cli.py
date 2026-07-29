@@ -40,7 +40,8 @@ def parse_timecode(value: str) -> float:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="toktool",
-        description="Clip une vidéo YouTube (max 60 s) et la publie sur TikTok.",
+        description=f"Clip une vidéo YouTube (max {MAX_CLIP_SECONDS} s) "
+        "et la publie sur TikTok.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
