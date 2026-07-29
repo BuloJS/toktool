@@ -2,4 +2,4 @@
 
 __version__ = "0.1.0"
 
-MAX_CLIP_SECONDS = 60
+MAX_CLIP_SECONDS = 120
