@@ -54,7 +54,13 @@ def cut_clip(
     cmd += [
         "-c:v", "libx264",
         "-preset", "medium",
-        "-crf", "20",
+        # Qualité élevée + débit soutenu : évite que TikTok signale une
+        # « faible qualité » sur les contenus peu chargés.
+        "-crf", "18",
+        "-maxrate", "16M",
+        "-bufsize", "32M",
+        "-profile:v", "high",
+        "-pix_fmt", "yuv420p",
         "-r", "30",
         "-c:a", "aac",
         "-b:a", "192k",
